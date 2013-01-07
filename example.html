@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- Any copyright is dedicated to the Public Domain.
+   - http://creativecommons.org/publicdomain/zero/1.0/ -->
+<html>
+  <head>
+    <script src="jpg.js"></script>
+    <script>
+
+    function displayImage(canvasId, url) {
+      var j = new JpegImage();
+      j.onload = function() {
+        var c = document.getElementById(canvasId);
+        c.width = j.width;
+        c.height = j.height;
+        var ctx = c.getContext("2d");
+        var d = ctx.getImageData(0,0,j.width,j.height);
+        j.copyToImageData(d);
+        ctx.putImageData(d, 0, 0);
+      };
+      j.load(url);
+    }
+
+    function loadImages() {
+      displayImage("c1", "j1.jpg");
+    }
+
+    </script>
+  </head>
+  <body onload="loadImages()">
+    <canvas id="c1"></canvas>
+  </body>
+</html>
