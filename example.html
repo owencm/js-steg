@@ -3,7 +3,8 @@
    - http://creativecommons.org/publicdomain/zero/1.0/ -->
 <html>
   <head>
-    <script src="jpg.js"></script>
+    <script src="jpg_encoder.js"></script>
+    <script src="jpg_decoder.js"></script>
     <script>
 
     function displayImage(canvasId, url) {
@@ -16,12 +17,31 @@
         var d = ctx.getImageData(0,0,j.width,j.height);
         j.copyToImageData(d);
         ctx.putImageData(d, 0, 0);
+        encodeCanvas(75);
       };
       j.load(url);
     }
 
     function loadImages() {
       displayImage("c1", "j1.jpg");
+    }
+
+    function encodeCanvas(qf){
+      // var theImg = document.getElementById('testimage');
+      // var cvs = document.createElement('canvas');
+      // cvs.width = theImg.width;
+      // cvs.height = theImg.height;
+      //document.body.appendChild(cvs);
+      var cvs = document.getElementById("c1");
+      var ctx = cvs.getContext("2d");
+      // ctx.drawImage(theImg,0,0);
+      var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
+      var encoder = new JPEGEncoder();
+      var jpegURI = encoder.encode(theImgData,qf);
+      
+      var img = document.createElement('img');
+      img.src = jpegURI;
+      document.body.appendChild(img);
     }
 
     </script>
