@@ -476,7 +476,6 @@ var JpegImage = (function jpegImage() {
     for (var blockRow = 0; blockRow < blocksPerColumn; blockRow++) {
       for (var blockCol = 0; blockCol < blocksPerLine; blockCol++) {
         //component.blocks[blockRow][blockCol] is an Int32Array of DCT coeffs in non-zigzag order
-        //component.blocks[blockRow][blockCol];
       }
     }
 
@@ -515,6 +514,7 @@ var JpegImage = (function jpegImage() {
       xhr.send(null);
     },
     parse: function parse(data) {
+      console.log(data);
       var offset = 0, length = data.length;
       function readUint16() {
         var value = (data[offset] << 8) | data[offset + 1];

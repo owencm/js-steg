@@ -494,6 +494,10 @@ function JPEGEncoder() {
 			const I64 = 64;
 			//This returns the quantized DCT coefficients
 			var DU_DCT = fDCTQuant(CDU, fdtbl);
+
+			//You can modify the DCT coefficients as a stream in here if you like
+			DU_DCT[0] = -DU_DCT[0];
+
 			//ZigZag reorder
 			for (var j=0;j<I64;++j) {
 				DU[ZigZag[j]]=DU_DCT[j];

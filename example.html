@@ -7,7 +7,7 @@
     <script src="jpg_decoder.js"></script>
     <script>
 
-    function displayImage(canvasId, url) {
+    function decodeImage(canvasId, url) {
       var j = new JpegImage();
       j.onload = function() {
         var c = document.getElementById(canvasId);
@@ -20,10 +20,6 @@
         encodeCanvas(75);
       };
       j.load(url);
-    }
-
-    function loadImages() {
-      displayImage("c1", "j1.jpg");
     }
 
     function encodeCanvas(qf){
