@@ -367,12 +367,12 @@ function JPEGEncoder() {
 			}
 
 			// Quantize/descale the coefficients
-			var fDCTQuant;
+			var fDCTQuantVar;
 			for (i=0; i<I64; ++i)
 			{
 				// Apply the quantization and scaling factor & Round to nearest integer
-				fDCTQuant = data[i]*fdtbl[i];
-				outputfDCTQuant[i] = (fDCTQuant > 0.0) ? ((fDCTQuant + 0.5)|0) : ((fDCTQuant - 0.5)|0);
+				fDCTQuantVar = data[i]*fdtbl[i];
+				outputfDCTQuant[i] = (fDCTQuantVar > 0.0) ? ((fDCTQuantVar + 0.5)|0) : ((fDCTQuantVar - 0.5)|0);
 				//outputfDCTQuant[i] = fround(fDCTQuant);
 
 			}
@@ -485,18 +485,13 @@ function JPEGEncoder() {
 			writeByte(0); // Bf
 		}
 		
-		function processDU(CDU, fdtbl, DC, HTDC, HTAC){
+		function processDU(DU_DCT, DC, HTDC, HTAC){
 			var EOB = HTAC[0x00];
 			var M16zeroes = HTAC[0xF0];
 			var pos;
 			const I16 = 16;
 			const I63 = 63;
 			const I64 = 64;
-			//This returns the quantized DCT coefficients
-			var DU_DCT = fDCTQuant(CDU, fdtbl);
-
-			//You can modify the DCT coefficients as a stream in here if you like
-			DU_DCT[0] = -DU_DCT[0];
 
 			//ZigZag reorder
 			for (var j=0;j<I64;++j) {
@@ -588,50 +583,71 @@ function JPEGEncoder() {
 			var tripleWidth = width*3;
 			
 			var x, y = 0;
+			var j = 0;
 			var r, g, b;
 			var start,p, col,row,pos;
+			var DU_DCT_ARRAY = new Array();
 			while(y < height){
 				x = 0;
 				while(x < quadWidth){
-				start = quadWidth * y + x;
-				p = start;
-				col = -1;
-				row = 0;
-				
-				for(pos=0; pos < 64; pos++){
-					row = pos >> 3;// /8
-					col = ( pos & 7 ) * 4; // %8
-					p = start + ( row * quadWidth ) + col;		
+					start = quadWidth * y + x;
+					p = start;
+					col = -1;
+					row = 0;
 					
-					if(y+row >= height){ // padding bottom
-						p-= (quadWidth*(y+1+row-height));
-					}
+					for(pos=0; pos < 64; pos++){
+						row = pos >> 3;// /8
+						col = ( pos & 7 ) * 4; // %8
+						p = start + ( row * quadWidth ) + col;		
+						
+						if(y+row >= height){ // padding bottom
+							p-= (quadWidth*(y+1+row-height));
+						}
 
-					if(x+col >= quadWidth){ // padding right	
-						p-= ((x+col) - quadWidth +4)
+						if(x+col >= quadWidth){ // padding right	
+							p-= ((x+col) - quadWidth +4)
+						}
+						
+						r = imageData[ p++ ];
+						g = imageData[ p++ ];
+						b = imageData[ p++ ];
+						
+						
+						/* // calculate YUV values dynamically
+						YDU[pos]=((( 0.29900)*r+( 0.58700)*g+( 0.11400)*b))-128; //-0x80
+						UDU[pos]=(((-0.16874)*r+(-0.33126)*g+( 0.50000)*b));
+						VDU[pos]=((( 0.50000)*r+(-0.41869)*g+(-0.08131)*b));
+						*/
+						
+						// use lookup table (slightly faster)
+						YDU[pos] = ((RGB_YUV_TABLE[r]             + RGB_YUV_TABLE[(g +  256)>>0] + RGB_YUV_TABLE[(b +  512)>>0]) >> 16)-128;
+						UDU[pos] = ((RGB_YUV_TABLE[(r +  768)>>0] + RGB_YUV_TABLE[(g + 1024)>>0] + RGB_YUV_TABLE[(b + 1280)>>0]) >> 16)-128;
+						VDU[pos] = ((RGB_YUV_TABLE[(r + 1280)>>0] + RGB_YUV_TABLE[(g + 1536)>>0] + RGB_YUV_TABLE[(b + 1792)>>0]) >> 16)-128;
 					}
 					
-					r = imageData[ p++ ];
-					g = imageData[ p++ ];
-					b = imageData[ p++ ];
-					
-					
-					/* // calculate YUV values dynamically
-					YDU[pos]=((( 0.29900)*r+( 0.58700)*g+( 0.11400)*b))-128; //-0x80
-					UDU[pos]=(((-0.16874)*r+(-0.33126)*g+( 0.50000)*b));
-					VDU[pos]=((( 0.50000)*r+(-0.41869)*g+(-0.08131)*b));
-					*/
-					
-					// use lookup table (slightly faster)
-					YDU[pos] = ((RGB_YUV_TABLE[r]             + RGB_YUV_TABLE[(g +  256)>>0] + RGB_YUV_TABLE[(b +  512)>>0]) >> 16)-128;
-					UDU[pos] = ((RGB_YUV_TABLE[(r +  768)>>0] + RGB_YUV_TABLE[(g + 1024)>>0] + RGB_YUV_TABLE[(b + 1280)>>0]) >> 16)-128;
-					VDU[pos] = ((RGB_YUV_TABLE[(r + 1280)>>0] + RGB_YUV_TABLE[(g + 1536)>>0] + RGB_YUV_TABLE[(b + 1792)>>0]) >> 16)-128;
+					DU_DCT_ARRAY[j] = new Array();
+					DU_DCT_ARRAY[j][0] = fDCTQuant(YDU, fdtbl_Y);
+					DCY = processDU(DU_DCT_ARRAY[j][0], DCY, YDC_HT, YAC_HT);
+					DU_DCT_ARRAY[j][1] = fDCTQuant(UDU, fdtbl_UV);
+					DCU = processDU(DU_DCT_ARRAY[j][1], DCU, UVDC_HT, UVAC_HT);
+					DU_DCT_ARRAY[j][2] = fDCTQuant(VDU, fdtbl_UV);
+					DCV = processDU(DU_DCT_ARRAY[j][2], DCV, UVDC_HT, UVAC_HT);
+
+					x+=32;
+					j++;
 				}
-				
-				DCY = processDU(YDU, fdtbl_Y, DCY, YDC_HT, YAC_HT);
-				DCU = processDU(UDU, fdtbl_UV, DCU, UVDC_HT, UVAC_HT);
-				DCV = processDU(VDU, fdtbl_UV, DCV, UVDC_HT, UVAC_HT);
-				x+=32;
+				y+=8;
+			}
+
+			var x = 0, y = 0, i = 0;
+			while(y < height){
+				x = 0;
+				while(x < quadWidth){
+					// DCY = processDU(DU_DCT_ARRAY[i][0], DCY, YDC_HT, YAC_HT);
+					// DCU = processDU(DU_DCT_ARRAY[i][1], DCU, UVDC_HT, UVAC_HT);
+					// DCV = processDU(DU_DCT_ARRAY[i][2], DCV, UVDC_HT, UVAC_HT);
+					x+=32;
+					i++;
 				}
 				y+=8;
 			}

@@ -514,7 +514,6 @@ var JpegImage = (function jpegImage() {
       xhr.send(null);
     },
     parse: function parse(data) {
-      console.log(data);
       var offset = 0, length = data.length;
       function readUint16() {
         var value = (data[offset] << 8) | data[offset + 1];
