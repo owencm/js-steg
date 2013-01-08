@@ -368,6 +368,7 @@ function JPEGEncoder() {
 
 			// Quantize/descale the coefficients
 			var fDCTQuantVar;
+			var outputfDCTQuant = new Array(64);
 			for (i=0; i<I64; ++i)
 			{
 				// Apply the quantization and scaling factor & Round to nearest integer
@@ -627,11 +628,8 @@ function JPEGEncoder() {
 					
 					DU_DCT_ARRAY[j] = new Array();
 					DU_DCT_ARRAY[j][0] = fDCTQuant(YDU, fdtbl_Y);
-					DCY = processDU(DU_DCT_ARRAY[j][0], DCY, YDC_HT, YAC_HT);
 					DU_DCT_ARRAY[j][1] = fDCTQuant(UDU, fdtbl_UV);
-					DCU = processDU(DU_DCT_ARRAY[j][1], DCU, UVDC_HT, UVAC_HT);
 					DU_DCT_ARRAY[j][2] = fDCTQuant(VDU, fdtbl_UV);
-					DCV = processDU(DU_DCT_ARRAY[j][2], DCV, UVDC_HT, UVAC_HT);
 
 					x+=32;
 					j++;
@@ -639,21 +637,20 @@ function JPEGEncoder() {
 				y+=8;
 			}
 
-			var x = 0, y = 0, i = 0;
-			while(y < height){
-				x = 0;
-				while(x < quadWidth){
-					// DCY = processDU(DU_DCT_ARRAY[i][0], DCY, YDC_HT, YAC_HT);
-					// DCU = processDU(DU_DCT_ARRAY[i][1], DCU, UVDC_HT, UVAC_HT);
-					// DCV = processDU(DU_DCT_ARRAY[i][2], DCV, UVDC_HT, UVAC_HT);
-					x+=32;
-					i++;
+			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE.
+			for (var i = 0; i < j; i++){
+				for (var k = 0; k < 64; k++) {
+					DU_DCT_ARRAY[i][0][k] = -DU_DCT_ARRAY[i][0][k];
 				}
-				y+=8;
+				// DU_DCT_ARRAY[i][1]
+				// DU_DCT_ARRAY[i][2]
 			}
-			
-			
-			////////////////////////////////////////////////////////////////
+
+			for (var i = 0; i < j; i++){
+				DCY = processDU(DU_DCT_ARRAY[i][0], DCY, YDC_HT, YAC_HT);
+				DCU = processDU(DU_DCT_ARRAY[i][1], DCU, UVDC_HT, UVAC_HT);
+				DCV = processDU(DU_DCT_ARRAY[i][2], DCV, UVDC_HT, UVAC_HT);
+			}
 	
 			// Do the bit alignment of the EOI marker
 			if ( bytepos >= 0 ) {
