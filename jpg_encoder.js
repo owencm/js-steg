@@ -637,14 +637,14 @@ function JPEGEncoder() {
 				y+=8;
 			}
 
-			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE.
-			for (var i = 0; i < j; i++){
-				for (var k = 0; k < 64; k++) {
-					DU_DCT_ARRAY[i][0][k] = -DU_DCT_ARRAY[i][0][k];
-				}
-				// DU_DCT_ARRAY[i][1]
-				// DU_DCT_ARRAY[i][2]
-			}
+			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE. As an example here we flip all the coefficients for one of the components.
+			// for (var i = 0; i < j; i++){
+			// 	for (var k = 0; k < 64; k++) {
+			// 		DU_DCT_ARRAY[i][0][k] = -DU_DCT_ARRAY[i][0][k];
+			// 	}
+			// 	DU_DCT_ARRAY[i][1]
+			// 	DU_DCT_ARRAY[i][2]
+			// }
 
 			for (var i = 0; i < j; i++){
 				DCY = processDU(DU_DCT_ARRAY[i][0], DCY, YDC_HT, YAC_HT);
