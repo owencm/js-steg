@@ -8,8 +8,8 @@
     function decodeImage(canvasId, url, callback) {
       var j = new JpegImage();
       j.onload = function(DU_DCT_ARRAY) {
-        console.log("Decoded DCT Array:");
-        console.log(DU_DCT_ARRAY);
+        console.log("Decoded DCT Luma Array:");d
+        console.log(DU_DCT_ARRAY[0]);
         var c = document.getElementById(canvasId);
         c.width = j.width;
         c.height = j.height;
@@ -39,6 +39,8 @@
     </script>
   </head>
   <body>
-    <canvas id="c1"></canvas>
+    Original: <img src="j1.jpg" />
+    Decoded: <canvas id="c1"></canvas>
+    Encoded: 
   </body>
 </html>
