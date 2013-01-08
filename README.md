@@ -8,7 +8,8 @@ At the current time it is not suitable for chroma steganography since the encode
 
 Licences
 
-/*
+  Modified JPEG encoder and decoder (c) 2013, Owen Campbell-Moore
+
   Copyright (c) 2008, Adobe Systems Incorporated
   All rights reserved.
 
@@ -38,8 +39,7 @@ Licences
   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/*
+
 JPEG encoder ported to JavaScript and optimized by Andreas Ritter, www.bytestrom.eu, 11/2009
 
 Basic GUI blocking jpeg encode
@@ -67,9 +67,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-*/
 
-/*
    Copyright 2011 notmasteryet
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,12 +81,3 @@ THE SOFTWARE.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
-
-// - The JPEG specification can be found in the ITU CCITT Recommendation T.81
-//   (www.w3.org/Graphics/JPEG/itu-t81.pdf)
-// - The JFIF specification can be found in the JPEG File Interchange Format
-//   (www.w3.org/Graphics/JPEG/jfif3.pdf)
-// - The Adobe Application-Specific JPEG markers in the Supporting the DCT Filters
-//   in PostScript Level 2, Technical Note #5116
-//   (partners.adobe.com/public/developer/en/ps/sdk/5116.DCT_Filter.pdf)
