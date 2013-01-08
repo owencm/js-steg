@@ -2,10 +2,7 @@ This code is part of a larger project for JS based steganography. It is based on
 
 For example, in it's original form the encoder would only buffer a single block's DCT coefficients before writing them - this version calculates all DCT coefficients, storing them in a single large array before writing them.
 
-Hopefully it will be of use to somebody. 
-
-Please take note of the following licences which apply to all code found in this repo:
-
+The example.html loads the jpeg provided (note this code must be run from a localserver due to the way the jpeg is loaded in this version), decodes it into a canvas and then re-encodes it into a JPEG.
 
 Licences
 
