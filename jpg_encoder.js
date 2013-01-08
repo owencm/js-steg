@@ -640,15 +640,11 @@ function JPEGEncoder() {
 			}
 
 			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE.
-			var count = 0;
+			console.log("Encoded DCT array:"); console.log(DU_DCT_ARRAY);
 			for (var i = 0; i < j; i++){
-				if (count < 10) {
-					console.log(DU_DCT_ARRAY[0][i]);
-					count++;
-				}
 				for (var k = 0; k < 64; k++) {
 					//DU_DCT_ARRAY[0][i][k] = DU_DCT_ARRAY[0][i][k];
-					//DU_DCT_ARRAY[i][1] and DU_DCT_ARRAY[i][2] are also available
+					//DU_DCT_ARRAY[1][i] and DU_DCT_ARRAY[1][i] are also available
 				}
 			}
 

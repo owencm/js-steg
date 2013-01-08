@@ -8,6 +8,7 @@
     function decodeImage(canvasId, url, callback) {
       var j = new JpegImage();
       j.onload = function(DU_DCT_ARRAY) {
+        console.log("Decoded DCT Array:");
         console.log(DU_DCT_ARRAY);
         var c = document.getElementById(canvasId);
         c.width = j.width;

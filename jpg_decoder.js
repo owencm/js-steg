@@ -489,12 +489,15 @@ var JpegImage = (function jpegImage() {
       }
     }
     
+    DU_DCT_ARRAY[component.componentId-1] = new Array();
+    var k = 0;
     for (var blockRow = 0; blockRow < blocksPerColumn; blockRow++) {
       for (var blockCol = 0; blockCol < blocksPerLine; blockCol++) {
-        DU_DCT_ARRAY[component.componentId-1] = new Array(64);
+        DU_DCT_ARRAY[component.componentId-1][k] = new Array(64);
         for (var i = 0; i<64; i++) {
-          DU_DCT_ARRAY[component.componentId-1][i] = component.blocks[blockRow][blockCol][i];
+          DU_DCT_ARRAY[component.componentId-1][k][i] = component.blocks[blockRow][blockCol][i];
         }
+        k++;
       }
     }
 
@@ -561,7 +564,6 @@ var JpegImage = (function jpegImage() {
         }
         var mcusPerLine = Math.ceil(frame.samplesPerLine / 8 / maxH);
         var mcusPerColumn = Math.ceil(frame.scanLines / 8 / maxV);
-        console.log(frame.components);
         for (componentId in frame.components) {
           if (frame.components.hasOwnProperty(componentId)) {
             component = frame.components[componentId];
