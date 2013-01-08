@@ -1,5 +1,23 @@
+// Example usage:
+// function decodeImage(canvasId, url, callback) {
+//   var j = new JpegImage();
+//   j.onload = function(DU_DCT_ARRAY) {
+//     console.log(DU_DCT_ARRAY);
+//     var c = document.getElementById(canvasId);
+//     c.width = j.width;
+//     c.height = j.height;
+//     var ctx = c.getContext("2d");
+//     var d = ctx.getImageData(0,0,j.width,j.height);
+//     j.copyToImageData(d);
+//     ctx.putImageData(d, 0, 0);
+//     callback();
+//   };
+//   j.load(url, true); //The second argument indicates whether you want the DCT array passed to the onload function
+// }
+
 var JpegImage = (function jpegImage() {
   "use strict";
+  var DU_DCT_ARRAY = new Array(3); //This will be filled with the DCT coefficients
   var dctZigZag = new Int32Array([
      0,
      1,  8,
@@ -470,12 +488,13 @@ var JpegImage = (function jpegImage() {
         dataOut[i] = sample < 0 ? 0 : sample > 0xFF ? 0xFF : sample;
       }
     }
-
-    //INJECT: THIS IS WHERE YOU CAN READ OUT DCT COEFFICIENTS TO FIND MESSAGES
-    var i, j;
+    
     for (var blockRow = 0; blockRow < blocksPerColumn; blockRow++) {
       for (var blockCol = 0; blockCol < blocksPerLine; blockCol++) {
-        //component.blocks[blockRow][blockCol] is an Int32Array of DCT coeffs in non-zigzag order
+        DU_DCT_ARRAY[component.componentId-1] = new Array(64);
+        for (var i = 0; i<64; i++) {
+          DU_DCT_ARRAY[component.componentId-1][i] = component.blocks[blockRow][blockCol][i];
+        }
       }
     }
 
@@ -499,7 +518,7 @@ var JpegImage = (function jpegImage() {
   }
 
   constructor.prototype = {
-    load: function load(path) {
+    load: function load(path, returnDCT) {
       var xhr = new XMLHttpRequest();
       console.log("Loading "+path);
       xhr.open("GET", path, true);
@@ -509,7 +528,11 @@ var JpegImage = (function jpegImage() {
         var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
         this.parse(data);
         if (this.onload)
-          this.onload();
+          if (returnDCT) {
+            this.onload(DU_DCT_ARRAY);
+          } else {
+            this.onload();
+          }
       }).bind(this);
       xhr.send(null);
     },
@@ -665,6 +688,7 @@ var JpegImage = (function jpegImage() {
               var qId = data[offset + 2];
               frame.componentsOrder.push(componentId);
               frame.components[componentId] = {
+                componentId: componentId,
                 h: h,
                 v: v,
                 quantizationTable: quantizationTables[qId]

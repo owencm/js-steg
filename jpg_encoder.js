@@ -588,6 +588,9 @@ function JPEGEncoder() {
 			var r, g, b;
 			var start,p, col,row,pos;
 			var DU_DCT_ARRAY = new Array();
+			DU_DCT_ARRAY[0] = new Array();
+			DU_DCT_ARRAY[1] = new Array();
+			DU_DCT_ARRAY[2] = new Array();
 			while(y < height){
 				x = 0;
 				while(x < quadWidth){
@@ -626,10 +629,9 @@ function JPEGEncoder() {
 						VDU[pos] = ((RGB_YUV_TABLE[(r + 1280)>>0] + RGB_YUV_TABLE[(g + 1536)>>0] + RGB_YUV_TABLE[(b + 1792)>>0]) >> 16)-128;
 					}
 					
-					DU_DCT_ARRAY[j] = new Array();
-					DU_DCT_ARRAY[j][0] = fDCTQuant(YDU, fdtbl_Y);
-					DU_DCT_ARRAY[j][1] = fDCTQuant(UDU, fdtbl_UV);
-					DU_DCT_ARRAY[j][2] = fDCTQuant(VDU, fdtbl_UV);
+					DU_DCT_ARRAY[0][j] = fDCTQuant(YDU, fdtbl_Y);
+					DU_DCT_ARRAY[1][j] = fDCTQuant(UDU, fdtbl_UV);
+					DU_DCT_ARRAY[2][j] = fDCTQuant(VDU, fdtbl_UV);
 
 					x+=32;
 					j++;
@@ -637,19 +639,23 @@ function JPEGEncoder() {
 				y+=8;
 			}
 
-			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE. As an example here we flip all the coefficients for one of the components.
-			// for (var i = 0; i < j; i++){
-			// 	for (var k = 0; k < 64; k++) {
-			// 		DU_DCT_ARRAY[i][0][k] = -DU_DCT_ARRAY[i][0][k];
-			// 	}
-			// 	DU_DCT_ARRAY[i][1]
-			// 	DU_DCT_ARRAY[i][2]
-			// }
+			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE.
+			var count = 0;
+			for (var i = 0; i < j; i++){
+				if (count < 10) {
+					console.log(DU_DCT_ARRAY[0][i]);
+					count++;
+				}
+				for (var k = 0; k < 64; k++) {
+					//DU_DCT_ARRAY[0][i][k] = DU_DCT_ARRAY[0][i][k];
+					//DU_DCT_ARRAY[i][1] and DU_DCT_ARRAY[i][2] are also available
+				}
+			}
 
 			for (var i = 0; i < j; i++){
-				DCY = processDU(DU_DCT_ARRAY[i][0], DCY, YDC_HT, YAC_HT);
-				DCU = processDU(DU_DCT_ARRAY[i][1], DCU, UVDC_HT, UVAC_HT);
-				DCV = processDU(DU_DCT_ARRAY[i][2], DCV, UVDC_HT, UVAC_HT);
+				DCY = processDU(DU_DCT_ARRAY[0][i], DCY, YDC_HT, YAC_HT);
+				DCU = processDU(DU_DCT_ARRAY[1][i], DCU, UVDC_HT, UVAC_HT);
+				DCV = processDU(DU_DCT_ARRAY[2][i], DCV, UVDC_HT, UVAC_HT);
 			}
 	
 			// Do the bit alignment of the EOI marker

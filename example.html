@@ -5,9 +5,10 @@
     <script src="jpg_decoder.js"></script>
     <script>
 
-    function decodeImage(canvasId, url) {
+    function decodeImage(canvasId, url, callback) {
       var j = new JpegImage();
-      j.onload = function() {
+      j.onload = function(DU_DCT_ARRAY) {
+        console.log(DU_DCT_ARRAY);
         var c = document.getElementById(canvasId);
         c.width = j.width;
         c.height = j.height;
@@ -15,20 +16,14 @@
         var d = ctx.getImageData(0,0,j.width,j.height);
         j.copyToImageData(d);
         ctx.putImageData(d, 0, 0);
-        encodeCanvas(75);
+        callback();
       };
-      j.load(url);
+      j.load(url, true);
     }
 
-    function encodeCanvas(qf){
-      // var theImg = document.getElementById('testimage');
-      // var cvs = document.createElement('canvas');
-      // cvs.width = theImg.width;
-      // cvs.height = theImg.height;
-      //document.body.appendChild(cvs);
-      var cvs = document.getElementById("c1");
+    function encodeCanvas(canvasId, qf){
+      var cvs = document.getElementById(canvasId);
       var ctx = cvs.getContext("2d");
-      // ctx.drawImage(theImg,0,0);
       var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
       var encoder = new JPEGEncoder();
       var jpegURI = encoder.encode(theImgData,qf);
@@ -38,7 +33,7 @@
       document.body.appendChild(img);
     }
 
-    decodeImage('c1', 'j1.jpg');
+    decodeImage('c1', 'j1.jpg', function() { encodeCanvas('c1', 75); });
 
     </script>
   </head>
