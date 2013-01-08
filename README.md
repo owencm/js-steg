@@ -1,8 +1,10 @@
-This code is part of a larger project for JS based steganography. It is based on free javascript ports of JPEG encoding and decoding I found online, modified to allow access to the DCT coefficients easily.
+This code is part of a larger project for JS based steganography. It is based on free javascript ports of JPEG encoding and decoding I found online, modified to allow access to the DCT coefficients easily (specifically Luma).
 
 For example, in it's original form the encoder would only buffer a single block's DCT coefficients before writing them - this version calculates all DCT coefficients, storing them in a single large array before writing them.
 
 The example.html loads the jpeg provided (note this code must be run from a localserver due to the way the jpeg is loaded in this version), decodes it into a canvas and then re-encodes it into a JPEG.
+
+At the current time it is not suitable for chroma steganography since the encoder and decoder return a different quantity of coefficients for chroma for reasons I haven't investigated. That said, nobody does chroma steganography so if you're after luma then this is perfect for you.
 
 Licences
 
