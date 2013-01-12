@@ -545,7 +545,7 @@ function JPEGEncoder() {
 			}
 		}
 		
-		this.encode = function(image,quality) // image data object
+		this.encode = function(image, quality, dctFunction) // image data object
 		{
 			var time_start = new Date().getTime();
 			
@@ -639,14 +639,8 @@ function JPEGEncoder() {
 				y+=8;
 			}
 
-			// HERE ARE THE 3 COMPONENT'S DCT COEFFICIENTS IN ARRAY FORM. MODIFY THEM HERE.
-			console.log("Encoded DCT luma array:"); console.log(DU_DCT_ARRAY[0]);
-			for (var i = 0; i < j; i++){
-				for (var k = 0; k < 64; k++) {
-					//DU_DCT_ARRAY[0][i][k] = DU_DCT_ARRAY[0][i][k];
-					//DU_DCT_ARRAY[1][i] and DU_DCT_ARRAY[1][i] are also available
-				}
-			}
+			//This is where the passed in function gets to fiddle with the coefficients. J is the number of blocks it has to play with.
+			dctFunction(DU_DCT_ARRAY, j);
 
 			for (var i = 0; i < j; i++){
 				DCY = processDU(DU_DCT_ARRAY[0][i], DCY, YDC_HT, YAC_HT);

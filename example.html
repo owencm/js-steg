@@ -8,8 +8,8 @@
     function decodeImage(canvasId, url, callback) {
       var j = new JpegImage();
       j.onload = function(DU_DCT_ARRAY) {
-        console.log("Decoded DCT Luma Array:");d
-        console.log(DU_DCT_ARRAY[0]);
+        var blocks = DU_DCT_ARRAY[0].length;
+        decodingDctFunction(DU_DCT_ARRAY, blocks);
         var c = document.getElementById(canvasId);
         c.width = j.width;
         c.height = j.height;
@@ -22,19 +22,37 @@
       j.load(url, true);
     }
 
-    function encodeCanvas(canvasId, qf){
+    function encodeCanvas(canvasId, qf, dctFunction){
       var cvs = document.getElementById(canvasId);
       var ctx = cvs.getContext("2d");
       var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
       var encoder = new JPEGEncoder();
-      var jpegURI = encoder.encode(theImgData,qf);
+      var jpegURI = encoder.encode(theImgData,qf,dctFunction);
       
       var img = document.createElement('img');
       img.src = jpegURI;
       document.body.appendChild(img);
     }
 
-    decodeImage('c1', 'j1.jpg', function() { encodeCanvas('c1', 75); });
+    function decodingDctFunction(DU_DCT_ARRAY, blocks) {
+      console.log("Decoded DCT Luma Array:");
+      console.log(DU_DCT_ARRAY[0]);
+    }
+
+    function encodingDctFunction(DU_DCT_ARRAY, blocks) {
+      console.log("Luma DCT Array to be written:");
+      console.log(DU_DCT_ARRAY[0]);
+      var count = 0;
+      for (var i = 0; i < blocks; i++){
+        for (var k = 0; k < 64; k++) {
+          DU_DCT_ARRAY[0][i][k] = -DU_DCT_ARRAY[0][i][k];
+          //DU_DCT_ARRAY[i][1] and DU_DCT_ARRAY[i][2] are also available
+        }
+      }
+      console.log("Stored "+Math.floor(count/8)+" bytes of data.");
+    }
+
+    decodeImage('c1', 'j1.jpg', function() { encodeCanvas('c1', 75, encodingDctFunction); });
 
     </script>
   </head>
