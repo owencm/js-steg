@@ -3,62 +3,173 @@
   <head>
     <script src="jpg_encoder.js"></script>
     <script src="jpg_decoder.js"></script>
-    <script>
-
-    function decodeImage(canvasId, url, callback) {
-      var j = new JpegImage();
-      j.onload = function(DU_DCT_ARRAY) {
-        var blocks = DU_DCT_ARRAY[0].length;
-        decodingDctFunction(DU_DCT_ARRAY, blocks);
-        var c = document.getElementById(canvasId);
-        c.width = j.width;
-        c.height = j.height;
-        var ctx = c.getContext("2d");
-        var d = ctx.getImageData(0,0,j.width,j.height);
-        j.copyToImageData(d);
-        ctx.putImageData(d, 0, 0);
-        callback();
-      };
-      j.load(url, true);
-    }
-
-    function encodeCanvas(canvasId, qf, dctFunction){
-      var cvs = document.getElementById(canvasId);
-      var ctx = cvs.getContext("2d");
-      var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
-      var encoder = new JPEGEncoder();
-      var jpegURI = encoder.encode(theImgData,qf,dctFunction);
-      
-      var img = document.createElement('img');
-      img.src = jpegURI;
-      document.body.appendChild(img);
-    }
-
-    function decodingDctFunction(DU_DCT_ARRAY, blocks) {
-      console.log("Decoded DCT Luma Array:");
-      console.log(DU_DCT_ARRAY[0]);
-    }
-
-    function encodingDctFunction(DU_DCT_ARRAY, blocks) {
-      console.log("Luma DCT Array to be written:");
-      console.log(DU_DCT_ARRAY[0]);
-      var count = 0;
-      for (var i = 0; i < blocks; i++){
-        for (var k = 0; k < 64; k++) {
-          DU_DCT_ARRAY[0][i][k] = -DU_DCT_ARRAY[0][i][k];
-          //DU_DCT_ARRAY[i][1] and DU_DCT_ARRAY[i][2] are also available
-        }
-      }
-      console.log("Stored "+Math.floor(count/8)+" bytes of data.");
-    }
-
-    decodeImage('c1', 'j1.jpg', function() { encodeCanvas('c1', 75, encodingDctFunction); });
-
-    </script>
+    <script src="seedrandom.js"></script>
   </head>
   <body>
-    Original: <img src="j1.jpg" />
+    <input type="file" id="image-select"></input>
+    <br />
     Decoded: <canvas id="c1"></canvas>
     Encoded: 
+    <script>
+
+    var decodedLumaArr;
+    var encodedLumaArr;
+
+      function decodeImage(canvasId, url, callback) {
+        var j = new JpegImage();
+        j.onload = function(DU_DCT_ARRAY) {
+          // Hack to handle the luma sometimes being 0 index and sometimes 1 indexed
+          if (DU_DCT_ARRAY[0] == undefined) {
+            decodingDctFunction(DU_DCT_ARRAY[1], DU_DCT_ARRAY[1].length);
+          } else {
+            decodingDctFunction(DU_DCT_ARRAY[0], DU_DCT_ARRAY[0].length);
+          }
+          var c = document.getElementById(canvasId);
+          c.width = j.width;
+          c.height = j.height;
+          var ctx = c.getContext("2d");
+          var d = ctx.getImageData(0,0,j.width,j.height);
+          j.copyToImageData(d);
+          ctx.putImageData(d, 0, 0);
+          callback();
+        };
+        j.load(url, true);
+      }
+
+      function decodingDctFunction(LUMA_ARRAY, blocks) {
+        decodedLumaArr = LUMA_ARRAY.slice(0);
+        console.log(decodedLumaArr);
+
+        coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
+        console.log("Getting valid blocks in DCT array with blocks: "+blocks+" to retreive data");
+
+        var password = "password";
+        shuffle(coeffs, password);
+
+        console.log("Receiving the information from coefficients: "+coeffs.slice(0, 17));
+
+        message = [];
+        var length = Math.min(coeffs.length, 16); //Hack until we pass length in first block
+        for (var i = 0; i < length; i++) {
+          posToChange = intToPair(i);
+          message.push(Math.abs(LUMA_ARRAY[posToChange.block][posToChange.k]%2));
+        }
+        console.log("RECEIVED MESSAGE: "+message.toString());
+      }
+
+      function encodeCanvas(canvasId, qf, dctFunction){
+        var cvs = document.getElementById(canvasId);
+        var ctx = cvs.getContext("2d");
+        var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
+        var encoder = new JPEGEncoder();
+        var jpegURI = encoder.encode(theImgData,qf,dctFunction);
+        
+        var img = document.createElement('img');
+        img.src = jpegURI;
+        document.body.appendChild(img);
+      }
+
+      function encodingDctFunction(DU_DCT_ARRAY, blocks) {
+        console.log(DU_DCT_ARRAY);
+
+        encodedLumaArr = DU_DCT_ARRAY[0].slice(0);
+
+        coeffs = getValidCoeffs(DU_DCT_ARRAY[0], blocks);
+        console.log("Getting valid coefficients in array with blocks: "+blocks+" for encoding")
+
+        var password = "password";
+        shuffle(coeffs, password);
+
+        console.log("Hiding the information in coefficients: "+coeffs.slice(0, 17));
+
+        message = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1];
+
+        var length = Math.min(coeffs.length, message.length);
+        for (var i = 0; i < length; i++) {
+          posToChange = intToPair(i);
+          if (DU_DCT_ARRAY[0][posToChange.block][posToChange.k]%2 != message[i]) {
+            DU_DCT_ARRAY[0][posToChange.block][posToChange.k] += 1; //TODO: Randomly add or subtract 1
+          }
+        }
+        console.log("We've encoded the file with our message");
+      }
+
+      function intToPair(i) {
+        var block = Math.floor(i/64);
+        var k = i%64;
+        return {block: block, k: k};
+      }
+
+      function pairToInt(block, k) {
+        return (64*block + k);
+      }
+
+      function random(from, to) {
+        return (from + Math.floor(0.5 + Math.random()*(to-from)));
+      }
+
+      function shuffle(arr, password) {
+        Math.seedrandom(password);
+        for (var i = arr.length - 1; i > 0; i--) {
+          j = random(0, i)
+          swap = arr[j];
+          arr[j] = arr[i];
+          arr[i] = swap;
+        }
+        Math.seedrandom();
+        return arr;
+      }
+
+      function getValidCoeffs(arr, blocks) {
+        var coeffs = []
+        for (var block = 0; block < blocks; block++){
+          for (var k = 1; k <= 1; k++) {
+            coeffs.push(pairToInt(block, k));
+          }
+        }
+        return coeffs;
+      }
+
+      function compareArrays() {
+        var blocks = decodedLumaArr.length;
+        errors = [];
+        totals = [];
+        for (var i = 0; i < blocks; i++){
+          for (var k = 0; k < 64; k++) {
+            
+            if (errors[k] == undefined) {
+              errors[k] = 0;
+              totals[k] = 0;
+            }
+
+            if (decodedLumaArr[i][k] != 0) {
+              if (decodedLumaArr[i][k] != encodedLumaArr[i][k]) {
+                errors[k]++;
+              }
+              totals[k]++;
+            }
+
+          }
+        }
+        for (var k = 0; k < 64; k++) {
+          errorRate = errors[k]/totals[k];
+          if (isNaN(errorRate)) {
+            errorRate = 0;
+          }
+          errorRate = Math.round(errorRate*1000)/10;
+          console.log(k+": "+errors[k]+" errors in "+totals[k]+" non-zeros. "+errorRate+"%");
+        }
+      }
+
+      function handleFileSelect(evt) {
+        files = evt.target.files;
+        f = files[0];
+        objectURL = window.webkitURL.createObjectURL(f);
+        decodeImage('c1', objectURL, function() { encodeCanvas('c1', 75, encodingDctFunction); });
+        // setTimeout(function() { compareArrays(); }, 2000);
+      }
+
+      document.getElementById("image-select").addEventListener("change", handleFileSelect, false)
+    </script>
   </body>
 </html>

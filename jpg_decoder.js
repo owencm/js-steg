@@ -489,13 +489,13 @@ var JpegImage = (function jpegImage() {
       }
     }
     
-    DU_DCT_ARRAY[component.componentId-1] = new Array();
+    DU_DCT_ARRAY[component.componentId] = new Array();
     var k = 0;
     for (var blockRow = 0; blockRow < blocksPerColumn; blockRow++) {
       for (var blockCol = 0; blockCol < blocksPerLine; blockCol++) {
-        DU_DCT_ARRAY[component.componentId-1][k] = new Array(64);
+        DU_DCT_ARRAY[component.componentId][k] = new Array(64);
         for (var i = 0; i<64; i++) {
-          DU_DCT_ARRAY[component.componentId-1][k][i] = component.blocks[blockRow][blockCol][i];
+          DU_DCT_ARRAY[component.componentId][k][i] = component.blocks[blockRow][blockCol][i];
         }
         k++;
       }

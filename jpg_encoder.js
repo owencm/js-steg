@@ -112,6 +112,7 @@ function JPEGEncoder() {
 				}
 				YTable[ZigZag[i]] = t;
 			}
+
 			var UVQT = [
 				17, 18, 24, 47, 99, 99, 99, 99,
 				18, 21, 26, 66, 99, 99, 99, 99,
