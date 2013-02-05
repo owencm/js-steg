@@ -4,6 +4,9 @@
     <script src="jpg_encoder.js"></script>
     <script src="jpg_decoder.js"></script>
     <script src="seedrandom.js"></script>
+    <script src="matrix.js"></script>
+    <script src="solver3.js"></script>
+    <script src="solver4.js"></script>
   </head>
   <body>
     <input type="file" id="image-select"></input>
@@ -14,6 +17,8 @@
 
     var decodedLumaArr;
     var encodedLumaArr;
+
+    var mlbc = JSON.parse('{"k":3,"n":27,"l":11,"r":13,"G1":[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,1],[0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0],[0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,1,1,1,1,1,0,0,1]],"Ht":[[0,1,1,1,1,1,1,1,0,0,0,0,1],[1,1,0,1,1,0,0,0,1,0,0,0,0],[1,0,0,1,0,1,1,1,1,1,0,0,1],[1,0,1,0,1,1,1,0,1,0,0,0,0],[0,0,1,0,0,0,0,0,0,1,0,0,1],[1,1,0,0,1,0,1,0,1,1,1,1,1],[0,1,1,0,0,0,1,0,1,1,0,0,1],[0,1,1,0,0,0,0,0,0,1,0,0,1],[1,0,1,0,0,1,0,0,1,0,0,0,0],[0,0,1,0,0,0,1,0,1,1,0,0,0],[0,1,0,1,1,1,0,1,1,0,1,1,0],[1,1,0,1,1,0,0,0,1,0,0,1,0],[1,0,1,0,0,1,0,0,0,0,0,1,0],[1,0,0,1,0,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0],[0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,1]],"Jt":[[1,0,0],[0,1,0],[0,0,1],[1,1,1],[1,0,0],[0,1,0],[0,0,0],[0,1,1],[1,1,0],[0,0,0],[0,1,0],[0,0,0],[1,1,0],[1,0,1],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],"G0":[[1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,0,0,0],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,1,1,1],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,1,1,0,0,1],[0,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0],[1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,1],[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0],[0,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1,0,0,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,1,0],[1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,0,0,1,1],[1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,1,0,0,0,1,0,1]]}');
 
       function decodeImage(canvasId, url, callback) {
         var j = new JpegImage();
@@ -37,24 +42,22 @@
       }
 
       function decodingDctFunction(LUMA_ARRAY, blocks) {
-        decodedLumaArr = LUMA_ARRAY.slice(0);
-        console.log(decodedLumaArr);
+        // decodedLumaArr = LUMA_ARRAY.slice(0);
+        // console.log(decodedLumaArr);
 
-        coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
-        console.log("Getting valid blocks in DCT array with blocks: "+blocks+" to retreive data");
+        // coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
+        // console.log("Getting valid blocks in DCT array with blocks: "+blocks+" to retreive data");
 
-        var password = "password";
-        shuffle(coeffs, password);
+        // var password = "password";
+        // shuffle(coeffs, password);
 
-        console.log("Receiving the information from coefficients: "+coeffs.slice(0, 17));
+        // stream = [];
+        // for (var i = 0; i<coeffs.length; i++) {
+        //   pos = intToPair(coeffs[i]);
+        //   stream.push(LUMA_ARRAY[pos.block][pos.k]%2);
+        // }
 
-        message = [];
-        var length = Math.min(coeffs.length, 16); //Hack until we pass length in first block
-        for (var i = 0; i < length; i++) {
-          posToChange = intToPair(i);
-          message.push(Math.abs(LUMA_ARRAY[posToChange.block][posToChange.k]%2));
-        }
-        console.log("RECEIVED MESSAGE: "+message.toString());
+        // decodeLongMessage(mlbc, stream);
       }
 
       function encodeCanvas(canvasId, qf, dctFunction){
@@ -80,18 +83,14 @@
         var password = "password";
         shuffle(coeffs, password);
 
-        console.log("Hiding the information in coefficients: "+coeffs.slice(0, 17));
-
-        message = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1];
-
-        var length = Math.min(coeffs.length, message.length);
-        for (var i = 0; i < length; i++) {
-          posToChange = intToPair(i);
-          if (DU_DCT_ARRAY[0][posToChange.block][posToChange.k]%2 != message[i]) {
-            DU_DCT_ARRAY[0][posToChange.block][posToChange.k] += 1; //TODO: Randomly add or subtract 1
-          }
+        stream = [];
+        for (var i = 0; i<coeffs.length; i++) {
+          pos = intToPair(coeffs[i]);
+          stream.push(LUMA_ARRAY[pos.block][pos.k]%2);
         }
-        console.log("We've encoded the file with our message");
+
+        encodeLongMessage(mlbc, "Hello world", stream);
+
       }
 
       function intToPair(i) {
