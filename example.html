@@ -9,10 +9,10 @@
     <script src="solver4.js"></script>
   </head>
   <body>
-    <input type="file" id="image-select"></input>
+    <input type="file" id="image-select"></input><button id="encodeButton">Encode</button><button id="decodeButton">Decode</button>
     <br />
-    Decoded: <canvas id="c1"></canvas>
-    Encoded: 
+    Decoded: <canvas id="canvas"></canvas>
+    Encoded: <img id="encoded"></img>
     <script>
 
     var decodedLumaArr;
@@ -20,7 +20,7 @@
 
     var mlbc = JSON.parse('{"k":3,"n":27,"l":11,"r":13,"G1":[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,1],[0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0],[0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,1,1,1,1,1,0,0,1]],"Ht":[[0,1,1,1,1,1,1,1,0,0,0,0,1],[1,1,0,1,1,0,0,0,1,0,0,0,0],[1,0,0,1,0,1,1,1,1,1,0,0,1],[1,0,1,0,1,1,1,0,1,0,0,0,0],[0,0,1,0,0,0,0,0,0,1,0,0,1],[1,1,0,0,1,0,1,0,1,1,1,1,1],[0,1,1,0,0,0,1,0,1,1,0,0,1],[0,1,1,0,0,0,0,0,0,1,0,0,1],[1,0,1,0,0,1,0,0,1,0,0,0,0],[0,0,1,0,0,0,1,0,1,1,0,0,0],[0,1,0,1,1,1,0,1,1,0,1,1,0],[1,1,0,1,1,0,0,0,1,0,0,1,0],[1,0,1,0,0,1,0,0,0,0,0,1,0],[1,0,0,1,0,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0],[0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,1]],"Jt":[[1,0,0],[0,1,0],[0,0,1],[1,1,1],[1,0,0],[0,1,0],[0,0,0],[0,1,1],[1,1,0],[0,0,0],[0,1,0],[0,0,0],[1,1,0],[1,0,1],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],"G0":[[1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,0,0,0],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,1,1,1],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,1,1,0,0,1],[0,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0],[1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,1],[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0],[0,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1,0,0,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,1,0],[1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,0,0,1,1],[1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,1,0,0,0,1,0,1]]}');
 
-      function decodeImage(canvasId, url, callback) {
+      function decodeImage(canvasId, url, decodingDctFunction, callback) {
         var j = new JpegImage();
         j.onload = function(DU_DCT_ARRAY) {
           // Hack to handle the luma sometimes being 0 index and sometimes 1 indexed
@@ -42,42 +42,47 @@
       }
 
       function decodingDctFunction(LUMA_ARRAY, blocks) {
-        // decodedLumaArr = LUMA_ARRAY.slice(0);
-        // console.log(decodedLumaArr);
+        decodedLumaArr = LUMA_ARRAY.slice(0);
+        console.log(decodedLumaArr);
 
-        // coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
-        // console.log("Getting valid blocks in DCT array with blocks: "+blocks+" to retreive data");
+        coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
+        console.log("Getting valid blocks in DCT array with blocks: "+blocks+" to retreive data");
 
-        // var password = "password";
-        // shuffle(coeffs, password);
+        var password = "password";
+        shuffle(coeffs, password);
 
-        // stream = [];
-        // for (var i = 0; i<coeffs.length; i++) {
-        //   pos = intToPair(coeffs[i]);
-        //   stream.push(LUMA_ARRAY[pos.block][pos.k]%2);
-        // }
+        stream = [];
+        for (var i = 0; i<coeffs.length; i++) {
+          pos = intToPair(coeffs[i]);
+          stream.push(Math.abs(LUMA_ARRAY[pos.block][pos.k]%2));
+        }
 
-        // decodeLongMessage(mlbc, stream);
+        decodeLongMessage(mlbc, stream);
       }
 
       function encodeCanvas(canvasId, qf, dctFunction){
         var cvs = document.getElementById(canvasId);
         var ctx = cvs.getContext("2d");
         var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
+        encodeData(canvasId, qf, dctFunction);
+      }
+
+      function encodeData(theImgData, qf, dctFunction){
+        console.log(theImgData);
         var encoder = new JPEGEncoder();
         var jpegURI = encoder.encode(theImgData,qf,dctFunction);
         
-        var img = document.createElement('img');
+        var img = document.getElementById('encoded');
         img.src = jpegURI;
-        document.body.appendChild(img);
       }
 
       function encodingDctFunction(DU_DCT_ARRAY, blocks) {
         console.log(DU_DCT_ARRAY);
+        LUMA_ARRAY = DU_DCT_ARRAY[0];
 
-        encodedLumaArr = DU_DCT_ARRAY[0].slice(0);
+        encodedLumaArr = LUMA_ARRAY.slice(0);
 
-        coeffs = getValidCoeffs(DU_DCT_ARRAY[0], blocks);
+        coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
         console.log("Getting valid coefficients in array with blocks: "+blocks+" for encoding")
 
         var password = "password";
@@ -89,8 +94,29 @@
           stream.push(LUMA_ARRAY[pos.block][pos.k]%2);
         }
 
-        encodeLongMessage(mlbc, "Hello world", stream);
+        messageToHide = encodeLongMessage(mlbc, "Hello world!", stream);
 
+        for (var i = 0; i<messageToHide.length; i++) {
+          pos = intToPair(coeffs[i]);
+          if (LUMA_ARRAY[pos.block][pos.k]%2 != messageToHide[i]) {
+            LUMA_ARRAY[pos.block][pos.k] += 1;
+          }
+        }     
+
+      }
+
+      function getImageDataFromURL(URL, callback){
+        var img = document.createElement('img');
+        img.onload = function() {
+          var cvs = document.createElement('canvas');
+          cvs.width = img.width;
+          cvs.height = img.height;
+          var ctx = cvs.getContext("2d");
+          ctx.drawImage(img,0,0);
+          window.data = ctx.getImageData(0, 0, cvs.width, cvs.height);
+          callback(ctx.getImageData(0, 0, cvs.width, cvs.height));
+        };
+        img.src = URL; // Set source path
       }
 
       function intToPair(i) {
@@ -160,15 +186,26 @@
         }
       }
 
+      var objectURL;
       function handleFileSelect(evt) {
         files = evt.target.files;
         f = files[0];
         objectURL = window.webkitURL.createObjectURL(f);
-        decodeImage('c1', objectURL, function() { encodeCanvas('c1', 75, encodingDctFunction); });
         // setTimeout(function() { compareArrays(); }, 2000);
       }
 
-      document.getElementById("image-select").addEventListener("change", handleFileSelect, false)
+      function decodeImageClicked () {
+        decodeImage('canvas', objectURL, decodingDctFunction, function(){});
+      }
+
+      function encodeImageClicked() {
+        getImageDataFromURL(objectURL, function(data) {encodeData(data, 75, encodingDctFunction)});
+      }
+
+      document.getElementById("image-select").addEventListener("change", handleFileSelect, false);
+      document.getElementById("decodeButton").addEventListener("click", decodeImageClicked);
+      document.getElementById("encodeButton").addEventListener("click", encodeImageClicked);
+
     </script>
   </body>
 </html>

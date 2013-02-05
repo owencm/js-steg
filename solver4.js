@@ -50,7 +50,7 @@
       assignment = [];
       validBacktracks = [];
       looped = 0;
-      loopLimit = 10000;
+      loopLimit = 1000000;
       current = 0;
       nowBacktracking = false;
       while (current < variableCount) {

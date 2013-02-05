@@ -30,7 +30,7 @@
       assignment = [];
       validBacktracks = [];
       looped = 0;
-      loopLimit = 1000000;
+      loopLimit = 10000000;
       maxOnes = 1;
       currentOnes = 0;
       current = 0;

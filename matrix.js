@@ -846,15 +846,21 @@
   };
 
   this.decodeLongMessage = function(MLBC, stream) {
-    var decodedBinary, decodedBinaryPart, encodedMessage, i, lastDecodedBlockEnd, lastDecodedChar, messageBlocks, messageSoFar, _i, _ref;
-    console.log("Asked to decode a message.");
+    var bitTotal, blockIndex, decodedBinary, decodedBinaryInCode, decodedBinaryPart, decodedBinaryPartInCode, encodedMessage, i, lastDecodedBlockEnd, lastDecodedChar, messageBlocks, messageSoFar, _i, _j, _ref, _ref1;
     lastDecodedChar = void 0;
-    decodedBinary = [];
+    decodedBinaryInCode = [];
     i = 0;
     while (lastDecodedChar !== "`" && stream.length > MLBC.n) {
       encodedMessage = stream.splice(0, MLBC.n);
-      decodedBinaryPart = this.decodeMessage(MLBC, [encodedMessage])[0];
-      decodedBinary = decodedBinary.concat(decodedBinaryPart);
+      decodedBinaryPartInCode = this.decodeMessage(MLBC, [encodedMessage])[0];
+      decodedBinaryInCode = decodedBinaryInCode.concat(decodedBinaryPartInCode);
+      decodedBinary = [];
+      if (0 < Math.floor(decodedBinaryInCode.length / 3) - 1) {
+        for (blockIndex = _i = 0, _ref = Math.floor(decodedBinaryInCode.length / 3) - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; blockIndex = 0 <= _ref ? ++_i : --_i) {
+          bitTotal = decodedBinaryInCode[blockIndex * 3] + decodedBinaryInCode[blockIndex * 3 + 1] + decodedBinaryInCode[blockIndex * 3 + 2];
+          decodedBinary.push(Math.floor(bitTotal / 3 + 0.5));
+        }
+      }
       lastDecodedBlockEnd = 8 * Math.floor(decodedBinary.length / 8) - 1;
       if (lastDecodedBlockEnd > 0) {
         messageSoFar = this.toStr(decodedBinary.slice(0, lastDecodedBlockEnd + 1 || 9e9));
@@ -879,7 +885,8 @@
       console.log("The message is " + messageBlocks + " long");
     }
     decodedBinary = [];
-    for (i = _i = 0, _ref = messageBlocks - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+    for (i = _j = 0, _ref1 = messageBlocks - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+      console.log("i: " + i);
       encodedMessage = stream.splice(0, MLBC.n);
       console.log("We're decoding: " + encodedMessage.toString());
       decodedBinaryPart = this.decodeMessage(MLBC, [encodedMessage]);
@@ -888,28 +895,33 @@
       console.log("So far we have " + decodedBinary.toString());
     }
     decodedBinary = decodedBinary.slice(0, (8 * Math.floor(decodedBinary.length / 8) - 1) + 1 || 9e9);
-    console.log("Trying to convert: " + decodedBinary.toString());
     return console.log("Message received: " + this.toStr(decodedBinary));
   };
 
   this.encodeLongMessage = function(MLBC, message, stream) {
-    var encodedMessage, encodedSection, header, i, length, messageBin, messages, streamSection, _i, _j, _ref, _ref1;
+    var encodedHeader, encodedMessage, encodedSection, header, i, length, messageBin, messages, streamSection, _i, _j, _k, _ref, _ref1, _ref2;
     messageBin = this.toBin(message);
     while (messageBin.length % MLBC.k !== 0) {
       messageBin.push(0);
     }
-    console.log("We're gonna transmit: " + messageBin.toString());
     length = messageBin.length / MLBC.k;
     console.log("The encoded message (without header) to be sent is " + length + " chunks long");
     header = this.toBin(length + "`");
-    messageBin = header.concat(messageBin);
+    encodedHeader = [];
+    for (i = _i = 0, _ref = header.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+      encodedHeader.push(header[i]);
+      encodedHeader.push(header[i]);
+      encodedHeader.push(header[i]);
+    }
+    messageBin = encodedHeader.concat(messageBin);
+    console.log("We're gonna encode and transmit: " + messageBin.toString());
     messages = [];
-    for (i = _i = 0, _ref = messageBin.length / MLBC.k - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+    for (i = _j = 0, _ref1 = messageBin.length / MLBC.k - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
       messages[i] = [];
       messages[i][0] = messageBin.slice(i * MLBC.k, (i * MLBC.k) + MLBC.k);
     }
     encodedMessage = [];
-    for (i = _j = 0, _ref1 = messages.length - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+    for (i = _k = 0, _ref2 = messages.length - 1; 0 <= _ref2 ? _k <= _ref2 : _k >= _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
       streamSection = stream.splice(MLBC.n * i, MLBC.n);
       encodedSection = this.encodeMessage(MLBC, messages[i], streamSection);
       encodedMessage = encodedMessage.concat(encodedSection);
