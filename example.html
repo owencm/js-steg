@@ -7,6 +7,7 @@
     <script src="matrix.js"></script>
     <script src="solver3.js"></script>
     <script src="solver4.js"></script>
+    <title>Steganography</title>
   </head>
   <body>
     <input type="file" id="image-select"></input><br />
@@ -14,19 +15,26 @@
     Password: <input type="text" id="password" value="P4ssw0rd"></input><br />
     <button id="encodeButton">Encode</button><button id="decodeButton">Decode</button>
     <p id="status"></p>
-    <!-- <canvas id="canvas"></canvas> -->
     <img id="encoded"></img>
     <script>
 
-    var decodedLumaArr;
-    var encodedLumaArr;
     var errorRateCaused;
+    var mlbcForEncodingAndDecoding = JSON.parse('{"u":1,"t":2,"k":1,"n":10,"l":4,"r":5,"G1":[[1,0,0,0,0,0,1,0,1,0]],"Ht":[[0,1,0,1,0],[0,1,0,0,1],[1,1,1,0,1],[0,1,1,1,0],[1,1,1,1,1],[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]],"Jt":[[1],[1],[1],[0],[0],[0],[0],[0],[0],[0]],"G0":[[1,1,0,0,0,0,0,0,1,1],[1,0,1,0,0,1,0,1,1,1],[0,0,0,1,0,0,1,1,1,0],[0,0,0,0,1,1,1,1,1,1]]}');
 
-    var mlbc = JSON.parse('{"u":1,"t":2,"k":1,"n":10,"l":4,"r":5,"G1":[[1,0,0,0,0,0,1,0,1,0]],"Ht":[[0,1,0,1,0],[0,1,0,0,1],[1,1,1,0,1],[0,1,1,1,0],[1,1,1,1,1],[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]],"Jt":[[1],[1],[1],[0],[0],[0],[0],[0],[0],[0]],"G0":[[1,1,0,0,0,0,0,0,1,1],[1,0,1,0,0,1,0,1,1,1],[0,0,0,1,0,0,1,1,1,0],[0,0,0,0,1,1,1,1,1,1]]}');
+      //STATUS MANAGEMENT
 
       function updateStatus(message) {
         console.log("Updating status to "+message);
         document.getElementById("status").innerText = message;
+      }
+
+      // JPEG FUNCTIONS
+
+      function encodeData(theImgData, qf, dctFunction){
+        var encoder = new JPEGEncoder();
+        var jpegURI = encoder.encode(theImgData,qf,dctFunction);
+        var img = document.getElementById('encoded');
+        img.src = jpegURI;
       }
 
       function decodeImage(canvasId, url, decodingDctFunction, callback) {
@@ -38,147 +46,95 @@
           } else {
             decodingDctFunction(DU_DCT_ARRAY[0], DU_DCT_ARRAY[0].length);
           }
-          // var c = document.getElementById(canvasId);
-          // c.width = j.width;
-          // c.height = j.height;
-          // var ctx = c.getContext("2d");
-          // var d = ctx.getImageData(0,0,j.width,j.height);
-          // j.copyToImageData(d);
-          // ctx.putImageData(d, 0, 0);
           callback();
         };
         j.load(url, true);
       }
 
-      function decodingDctFunction(LUMA_ARRAY, blocks) {
-        decodedLumaArr = LUMA_ARRAY.slice(0);
-        // console.log(decodedLumaArr);
+      // DCT FUNCTIONS AND THEIR WRAPPERS
 
-        coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
-        console.log(coeffs.length+" coefficients were available for storing.");
-
-        var password = document.getElementById("password").value;
-        shuffle(coeffs, password);
-        console.log("We've shuffled the coefficients");
-
-        stream = [];
-        for (var i = 0; i<coeffs.length; i++) {
-          pos = intToPair(coeffs[i]);
-          stream.push(Math.abs(LUMA_ARRAY[pos.block][pos.k]%2));
+      function encodingDctFunction(DU_DCT_ARRAY, blocks, message, password, mlbc) {
+        function makeChanges(messageToHide, LUMA_ARRAY) {
+          var stuckBitErrors = 0;
+          for (var i = 0; i<messageToHide.length; i++) {
+            pos = intToPair(coeffs[i]);
+            if (Math.abs(LUMA_ARRAY[pos.block][pos.k]%2) != messageToHide[i]) {
+              if (LUMA_ARRAY[pos.block][pos.k] != 0) { // If the bit isn't stuck
+                if (LUMA_ARRAY[pos.block][pos.k] < 0) { //F5 embedding
+                  LUMA_ARRAY[pos.block][pos.k] += 1;
+                } else {
+                  LUMA_ARRAY[pos.block][pos.k] -= 1;
+                }
+              } else {
+                stuckBitErrors++;
+              }
+            }
+          }  
+          return stuckBitErrors;
         }
+        function coeffsToStuckBitStream(coeffs, LUMA_ARRAY) {
+          stream = [];
+          for (var i = 0; i<coeffs.length; i++) {
+            pos = intToPair(coeffs[i]);
+            if (LUMA_ARRAY[pos.block][pos.k] == 0) {
+              stream.push(0);
+            } else {
+              stream.push(1);
+            }
+          }
+          return stream;
+        }
+        updateStatus("Embedding secret message. Please wait...");
+        LUMA_ARRAY = DU_DCT_ARRAY[0];
+        coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
+        console.log("We have "+coeffs.length+" coeffs within to encode data");
+        shuffle(coeffs, password);
+        var stream = coeffsToStuckBitStream(coeffs, LUMA_ARRAY);
+        messageToHide = encodeLongMessage(mlbc, message, stream);
+        stuckBitErrors = makeChanges(messageToHide, LUMA_ARRAY);
+        errorRateCaused = stuckBitErrors/messageToHide.length;
+        console.log("We caused "+stuckBitErrors+" ("+errorRateCaused*100+"%) errors to occur in unavoidable stuck bits");   
 
-        message = decodeLongMessage(mlbc, stream);
-        // bestGuessMessage = guessBetterMessage(message);
-        updateStatus("Message received: \""+message+"\"");
-      }
-
-      function encodeCanvas(canvasId, qf, dctFunction){
-        var cvs = document.getElementById(canvasId);
-        var ctx = cvs.getContext("2d");
-        var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
-        encodeData(canvasId, qf, dctFunction);
-      }
-
-      function encodeData(theImgData, qf, dctFunction){
-        var encoder = new JPEGEncoder();
-        var jpegURI = encoder.encode(theImgData,qf,dctFunction);
-        if (errorRateCaused>0.05) {
-          updateStatus("Encoding complete, although the image is not an ideal cover and the message may have a higher than expected error rate. Tip: images with large areas of a single colour, such as sky, are not suitable for steganography.");
-        } else if (errorRateCaused>0.1) {
-          updateStatus("Encoding complete although the cover is very bad. We recommend choosing a new one and trying again.");
+        //TODO: Refactor status
+        if (errorRateCaused>0.01) {
+          updateStatus("Encoding almost complete although the cover is very bad. We recommend choosing a new one or reducing the size of your message and trying again.");
+        } else if (errorRateCaused>0.005) {
+          updateStatus("Encoding almost complete, although the image is not an ideal cover and the message may have a higher than expected error rate. Tip: images with large areas of a single colour, such as sky, are not suitable for steganography.");
         } else { 
           updateStatus("Encoding complete.");
         }
-        var img = document.getElementById('encoded');
-        img.src = jpegURI;
       }
 
-      function encodingDctFunction(DU_DCT_ARRAY, blocks) {
-        updateStatus("Embedding secret message. Please wait...");
-        // console.log(DU_DCT_ARRAY);
-        LUMA_ARRAY = DU_DCT_ARRAY[0];
-
-        // encodedLumaArr = LUMA_ARRAY.slice(0);
-
+      function decodingDctFunction(LUMA_ARRAY, blocks, password, mlbc) {
+        function coeffsToStream(coeffs, LUMA_ARRAY) {
+          stream = [];
+          for (var i = 0; i<coeffs.length; i++) {
+            pos = intToPair(coeffs[i]);
+            stream.push(Math.abs(LUMA_ARRAY[pos.block][pos.k]%2));
+          }
+        }
         coeffs = getValidCoeffs(LUMA_ARRAY, blocks);
-        console.log("We have "+coeffs.length+" coeffs within to encode data");
-
-        var password = document.getElementById("password").value;
+        console.log(coeffs.length+" coefficients were available for storing.");
         shuffle(coeffs, password);
+        stream = coeffsToStream(coeffs, LUMA_ARRAY);
 
-        stream = [];
-        for (var i = 0; i<coeffs.length; i++) {
-          pos = intToPair(coeffs[i]);
-          if (LUMA_ARRAY[pos.block][pos.k] == 0) {
-            stream.push(0);
-          } else {
-            stream.push(1);
-          }
+        message = decodeLongMessage(mlbc, stream);
+        updateStatus("Message received: \""+message+"\"");
+      }
+
+      function createEncodingDctFunction(message, password, mlbc) {
+        return function(DU_DCT_ARRAY, blocks) {
+          encodingDctFunction(DU_DCT_ARRAY, blocks, message, password, mlbc);
+        } 
+      }
+
+      function createDecodingDctFunction(password, mlbc) {
+        return function(DU_DCT_ARRAY, blocks) {
+          decodingDctFunction(DU_DCT_ARRAY, blocks, password, mlbc);
         }
-
-        messageToHide = encodeLongMessage(mlbc, document.getElementById("message").value, stream);
-
-        var stuckBitErrors = 0;
-        for (var i = 0; i<messageToHide.length; i++) {
-          pos = intToPair(coeffs[i]);
-          if (Math.abs(LUMA_ARRAY[pos.block][pos.k]%2) != messageToHide[i]) {
-            if (LUMA_ARRAY[pos.block][pos.k] != 0) { // If the bit isn't stuck
-              if (Math.floor(Math.random()+0.5) == 1) {
-                LUMA_ARRAY[pos.block][pos.k] += 1;
-              } else {
-                LUMA_ARRAY[pos.block][pos.k] -= 1;
-              }
-            } else {
-              stuckBitErrors++;
-            }
-          }
-        }  
-
-        console.log("We caused "+stuckBitErrors+" ("+stuckBitErrors/messageToHide.length*100+"%) errors to occur in unavoidable stuck bits");   
-        errorRateCaused = stuckBitErrors/messageToHide.length*100;
-        updateStatus("Message is hidden. Finishing compression. Please wait...")
-
       }
 
-      function getImageDataFromURL(URL, callback){
-        var img = document.createElement('img');
-        img.onload = function() {
-          var cvs = document.createElement('canvas');
-          cvs.width = img.width;
-          cvs.height = img.height;
-          var ctx = cvs.getContext("2d");
-          ctx.drawImage(img,0,0);
-          window.data = ctx.getImageData(0, 0, cvs.width, cvs.height);
-          callback(ctx.getImageData(0, 0, cvs.width, cvs.height));
-        };
-        img.src = URL; // Set source path
-      }
-
-      function intToPair(i) {
-        var block = Math.floor(i/64);
-        var k = i%64;
-        return {block: block, k: k};
-      }
-
-      function pairToInt(block, k) {
-        return (64*block + k);
-      }
-
-      function random(from, to) {
-        return (from + Math.floor(0.5 + Math.random()*(to-from)));
-      }
-
-      function shuffle(arr, password) {
-        Math.seedrandom(password);
-        for (var i = arr.length - 1; i > 0; i--) {
-          j = random(0, i)
-          swap = arr[j];
-          arr[j] = arr[i];
-          arr[i] = swap;
-        }
-        Math.seedrandom();
-        return arr;
-      }
+      // ENCODING AND DECODING HELPERS
 
       function getValidCoeffs(arr, blocks) {
         var coeffs = []
@@ -190,34 +146,81 @@
         return coeffs;
       }
 
-      function compareArrays() {
-        var blocks = decodedLumaArr.length;
-        errors = [];
-        totals = [];
-        for (var i = 0; i < blocks; i++){
-          for (var k = 0; k < 64; k++) {
-            
-            if (errors[k] == undefined) {
-              errors[k] = 0;
-              totals[k] = 0;
-            }
+      function intToPair(i) { // Used to convert coefficient block, mode pairs to integers
+        var block = Math.floor(i/64);
+        var k = i%64;
+        return {block: block, k: k};
+      }
 
-            if (decodedLumaArr[i][k] != 0) {
-              if (decodedLumaArr[i][k] != encodedLumaArr[i][k]) {
-                errors[k]++;
-              }
-              totals[k]++;
-            }
+      function pairToInt(block, k) { // Used to convert integers to coefficient block, mode pairs
+        return (64*block + k);
+      }
 
-          }
+      function random(from, to) { // Used in shuffling
+        return (from + Math.floor(0.5 + Math.random()*(to-from)));
+      }
+
+      function shuffle(arr, password) { // Knuth shuffle
+        Math.seedrandom(password);
+        for (var i = arr.length - 1; i > 0; i--) {
+          j = random(0, i)
+          swap = arr[j];
+          arr[j] = arr[i];
+          arr[i] = swap;
         }
-        for (var k = 0; k < 64; k++) {
-          errorRate = errors[k]/totals[k];
-          if (isNaN(errorRate)) {
-            errorRate = 0;
-          }
-          errorRate = Math.round(errorRate*1000)/10;
-          console.log(k+": "+errors[k]+" errors in "+totals[k]+" non-zeros. "+errorRate+"%");
+        Math.seedrandom();
+        return arr;
+      }
+
+      // JPEG HELPER FUNCTIONS
+
+      function getImageDimensions(url, callback){
+        var img = document.createElement('img');
+        img.onload = function() {
+          callback({width: img.width, height: img.height});
+        };
+        img.src = url; // Set source path
+      }
+
+      function encodeCanvas(canvasId, qf, dctFunction){
+        var cvs = document.getElementById(canvasId);
+        var ctx = cvs.getContext("2d");
+        var theImgData = (ctx.getImageData(0, 0, cvs.width, cvs.height));
+        encodeData(canvasId, qf, dctFunction);
+      }
+
+      function getImageDataFromURL(URL, callback){
+        var img = document.createElement('img');
+        img.onload = function() {
+          var cvs = document.createElement('canvas');
+          cvs.width = img.width;m
+          cvs.height = img.height;
+          var ctx = cvs.getContext("2d");
+          ctx.drawImage(img,0,0);
+          window.data = ctx.getImageData(0, 0, cvs.width, cvs.height);
+          callback(ctx.getImageData(0, 0, cvs.width, cvs.height));
+        };
+        img.src = URL; // Set source path
+      }
+
+      //USER INTERFACE CODE
+
+      function decodeImageClicked () {
+        decodeImage('canvas', objectURL, createDecodingDctFunction(mlbcForEncodingAndDecoding), function(){});
+      }
+
+      function encodeImageClicked() {
+        if (document.getElementById("message").value.length > 0) {
+          updateStatus("Recompressing image. Please wait...");
+          setTimeout(function() {
+            getImageDataFromURL(objectURL, 
+              function(data) {
+                encodeData(data, 75, createEncodingDctFunction(message, password, mlbcForEncodingAndDecoding));
+              }
+            );
+          }, 100);
+        } else {
+          updateStatus("Please type a message to be sent.");
         }
       }
 
@@ -232,8 +235,8 @@
             if (size.width % 16 != 0 || size.height % 16 != 0) {
               updateStatus("Error: please select an image with width and height as a multiple of 16 (e.g. 960*720).")
             } else {
-              var coefficientCount = (size.width * size.height / 64) - Math.floor(1+5*3*8*mlbc.n/mlbc.k);
-              var maxLength = Math.floor(coefficientCount/8*mlbc.k/mlbc.n);
+              var coefficientCount = (size.width * size.height / 64) - Math.floor(1+5*3*8*mlbcForEncodingAndDecoding.n/mlbcForEncodingAndDecoding.k);
+              var maxLength = Math.floor(coefficientCount/8*mlbcForEncodingAndDecoding.k/mlbcForEncodingAndDecoding.n);
               updateStatus("This image has space for "+maxLength+" characters of hidden message");
               document.getElementById("message").value = document.getElementById("message").value.slice(0, maxLength);
               document.getElementById("message").setAttribute("maxlength", maxLength);
@@ -241,35 +244,43 @@
           });
           document.getElementById("encoded").src = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
         }
-        // setTimeout(function() { compareArrays(); }, 2000);
-      }
-
-      function getImageDimensions(url, callback){
-        var img = document.createElement('img');
-        img.onload = function() {
-          callback({width: img.width, height: img.height});
-        };
-        img.src = url; // Set source path
-      }
-
-      function decodeImageClicked () {
-        decodeImage('canvas', objectURL, decodingDctFunction, function(){});
-      }
-
-      function encodeImageClicked() {
-        if (document.getElementById("message").value.length > 0) {
-          updateStatus("Recompressing image. Please wait...");
-          setTimeout(function() {
-            getImageDataFromURL(objectURL, function(data) {encodeData(data, 75, encodingDctFunction)});
-          }, 100);
-        } else {
-          updateStatus("Please type a message to be sent.");
-        }
       }
 
       document.getElementById("image-select").addEventListener("change", handleFileSelect, false);
       document.getElementById("decodeButton").addEventListener("click", decodeImageClicked);
       document.getElementById("encodeButton").addEventListener("click", encodeImageClicked);
+
+
+      // function compareArrays() {
+      //   var blocks = decodedLumaArr.length;
+      //   errors = [];
+      //   totals = [];
+      //   for (var i = 0; i < blocks; i++){
+      //     for (var k = 0; k < 64; k++) {
+            
+      //       if (errors[k] == undefined) {
+      //         errors[k] = 0;
+      //         totals[k] = 0;
+      //       }
+
+      //       if (decodedLumaArr[i][k] != 0) {
+      //         if (decodedLumaArr[i][k] != encodedLumaArr[i][k]) {
+      //           errors[k]++;
+      //         }
+      //         totals[k]++;
+      //       }
+
+      //     }
+      //   }
+      //   for (var k = 0; k < 64; k++) {
+      //     errorRate = errors[k]/totals[k];
+      //     if (isNaN(errorRate)) {
+      //       errorRate = 0;
+      //     }
+      //     errorRate = Math.round(errorRate*1000)/10;
+      //     console.log(k+": "+errors[k]+" errors in "+totals[k]+" non-zeros. "+errorRate+"%");
+      //   }
+      // }
 
     </script>
   </body>
