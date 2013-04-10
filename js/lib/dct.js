@@ -161,13 +161,22 @@
   };
 
   this.getImageDimensions = function(url, callback) {
-    var img;
+    var img,
+      _this = this;
 
     img = document.createElement("img");
     img.onload = function() {
+      var ctx, cvs;
+
+      cvs = document.createElement("canvas");
+      cvs.width = img.width;
+      cvs.height = img.height;
+      ctx = cvs.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      _this.resizeImage(cvs);
       return callback({
-        width: img.width,
-        height: img.height
+        width: cvs.width,
+        height: cvs.height
       });
     };
     return img.src = url;
@@ -182,8 +191,36 @@
     return encodeData(canvasId, qf, dctFunction);
   };
 
-  this.getImageDataFromURL = function(URL, callback) {
-    var img;
+  this.resizeImage = function(canvas) {
+    var ctx, maxHeight, maxWidth, ratio, tempCanvas, tempCtx;
+
+    maxWidth = 960;
+    maxHeight = 720;
+    ratio = 1;
+    ctx = canvas.getContext("2d");
+    if (canvas.width > maxWidth) {
+      ratio = maxWidth / canvas.width;
+    }
+    if (canvas.height > maxHeight) {
+      if (maxHeight / canvas.height < ratio) {
+        ratio = maxHeight / canvas.height;
+      }
+    }
+    tempCanvas = document.createElement("canvas");
+    tempCtx = tempCanvas.getContext("2d");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCtx.drawImage(canvas, 0, 0);
+    canvas.width = canvas.width * ratio;
+    canvas.width = 16 * Math.floor(canvas.width / 16);
+    canvas.height = canvas.height * ratio;
+    canvas.height = 16 * Math.floor(canvas.height / 16);
+    return ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+  };
+
+  this.getImageDataFromURL = function(URL, callback, resize) {
+    var img,
+      _this = this;
 
     img = document.createElement("img");
     img.onload = function() {
@@ -194,6 +231,7 @@
       cvs.height = img.height;
       ctx = cvs.getContext("2d");
       ctx.drawImage(img, 0, 0);
+      _this.resizeImage(cvs);
       window.data = ctx.getImageData(0, 0, cvs.width, cvs.height);
       return callback(ctx.getImageData(0, 0, cvs.width, cvs.height));
     };
