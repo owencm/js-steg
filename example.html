@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Steganography</title>
+    <title>Steganography example</title>
   </head>
   <body>
-    <input type="file" id="image-select"></input><br />
-    Message to send: <input type="text" id="message" value="" style="width:800px"></input><br />
-    Password: <input type="text" id="password" value="P4ssw0rd"></input><br />
-    <button id="encodeButton">Encode</button><button id="decodeButton">Decode</button>
-    <p id="status"></p>
+    <h1>Steganography example</h1>
+    <p>This example can print the selected JPEG's discrete cosine transform coefficients to the console or encode the image as a JPEG, while applying a customizable coefficient modifification step (in this example we invert the luminosity).</p>
+    <p>Please contact owencmoore@gmail.com with bugs or comments.</p>
+    <input type="file" id="image-select"></input>
+    <br />
+    <button id="encodeButton">Modify the coefficients</button>
+    <button id="decodeButton">Read the coefficients</button>
+    <br />
     <img id="encodedImage"></img>
-    <script src="js/jpg_encoder.js"></script>
-    <script src="js/jpg_decoder.js"></script>
-    <script src="js/lib/seedrandom.js"></script>
-    <script src="js/lib/mlbc.js"></script>
-    <script src="js/lib/dct.js"></script>
-    <script src="js/main.js"></script>
+
+    <script src="lib/jsstegencoder-1.0.js"></script>
+    <script src="lib/jsstegdecoder-1.0.js"></script>
+    <script src="lib/jssteg-1.0.js"></script>
+    <script src="example.js"></script>
   </body>
 </html>
